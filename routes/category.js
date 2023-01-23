@@ -32,7 +32,7 @@ router.put("/:id", verifyTokenAdmin, async(req,res)=>{
 })
 
 //delete Category;
-router.delete("/:id", verifyTokenAdmin, async (req,res)=>{
+router.post("/delete/:id", verifyTokenAdmin, async (req,res)=>{
     try{
         const deletedCategory = await Category.findByIdAndDelete(req.params.id);
         res.status(200).json(deletedCategory);
