@@ -5,7 +5,7 @@ const {verifyToken,verifyTokenAuthorization,verifyTokenAdmin} = require("./verif
 const multer = require('multer');
 const storage = multer.diskStorage({
   destination:function(re,file,cb){
-    cb(null, __dirname + '/uploads')
+    cb(null,'../uploads')
   },
   filename:function(req,file,cb){
     cb(null,Date.now() + '-' + file.originalname)
