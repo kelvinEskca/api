@@ -3,17 +3,8 @@ const router = require("express").Router();
 const cloudinary = require('../utils/cloudinary');
 const {verifyToken,verifyTokenAuthorization,verifyTokenAdmin} = require("./verifyToken");
 const multer = require('multer');
-const path = require('path');
-const storage = multer.diskStorage({
-  destination:function(re,file,cb){
-    cb(null,path.join(__dirname, 'uploads'))
-  },
-  filename:function(req,file,cb){
-    cb(null,Date.now() + '-' + file.originalname)
-  }
-});
-const upload = multer({ storage: storage });
-const fs = require('fs');
+const storage = multer.memoryStorage();
+const upload = multer({ dest: "../uploads" });
 const { uploader } = require("../utils/cloudinary");
 
 const saveProduct = async (product) => {
@@ -28,34 +19,25 @@ router.post("/", verifyTokenAdmin, upload.array("image"), async (req, res) => {
   try {
     const sizesArray = req.body.sizes.split(',').map(size => size.trim());
     const colorsArray = req.body.colors.split(',').map(color => color.trim());
-    const uploadImages = async (path) => await cloudinary.uploads(path,"Images");
-    if(req.method === 'POST'){
-      const urls = [];
-      const files = req.files;
-      for(const file of files){
-        const {path} = file;
-        const newPath = await uploader(path);
-        urls.push(newPath);
-        fs.unlinkSync(path)
-      }
-      res.status(200).json({
-        data:urls,
-        messag:"Image Uploaded Successfully"
-      })
-    }
-    else{
-      res.status(405).json({
-        err:"Image Upload Failed"
-      })
-    }
-    const newProduct = {...req.body, image: urls, sizes: sizesArray, colors: colorsArray};
+    const uploadPromises = req.files.map(async file => {
+      const result = await cloudinary.uploader.upload(file.path);
+      return result;
+    });
+    const uploadResults = await Promise.all(uploadPromises);
+    const image = uploadResults.map(result => {
+      return {public_id:result.public_id, url:result.url}
+    });
+    const newProduct = {...req.body, image: image, sizes: sizesArray, colors: colorsArray};
     const savedProduct = await saveProduct(newProduct);
-    console.log(savedProduct)
-    res.status(200).json("Product Added");
+    console.log(savedProduct);
+    res.json({
+      message: "Images uploaded successfully",
+      images: uploadResults.map(result => result.url)
+    });
   } 
   catch (err) {
-    res.status(500).json(err);
     console.log(err);
+    res.status(500).json(err);
   }
 });
 
