@@ -13,7 +13,7 @@ router.post('/create-checkout-session', async (req, res) => {
    const cart = req.body.items.map((item)=>{
       return {
          name:item.name,
-         images:[item.image[0].originalname], 
+         images:[item.image[0].url], 
          qty:item.qty,
          price:item.price,
          desc:item.desc,
